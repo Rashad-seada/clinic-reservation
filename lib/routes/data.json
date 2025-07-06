@@ -1,0 +1,82 @@
+{
+  "patient": {
+    "id": 3432,
+    "username": "Rashad Atef Hassan seada",
+    "birthDate": "2000-01-01T00:00:00",
+    "idNumber": "",
+    "idType": "",
+    "email": "",
+    "phone": "",
+    "nationality": "",
+    "religon": "",
+    "educationLevel": ""
+  },
+  "bookingAppointmentData": {
+    "clinics": [
+      {
+        "id": 1,
+        "name": "عيادة 1"
+      },
+      {
+        "id": 3,
+        "name": "عيادة 2"
+      },
+      {
+        "id": 4,
+        "name": "عيادة 3"
+      },
+      {
+        "id": 5,
+        "name": "عيادة 4"
+      },
+      {
+        "id": 6,
+        "name": "عيادة 5"
+      },
+      {
+        "id": 7,
+        "name": "عيادة 6"
+      },
+      {
+        "id": 8,
+        "name": "عيادة 7"
+      },
+      {
+        "id": 9,
+        "name": "مركز تحاليل"
+      },
+      {
+        "id": 10,
+        "name": "on call"
+      },
+      {
+        "id": 11,
+        "name": "وحده الاشعه"
+      }
+    ],
+    "insuranceCompanies": [
+      {
+        "id": 1,
+        "name": "تحاليل"
+      }
+    ],
+    "discountCards": [
+      {
+        "id": 1,
+        "name": "AE78VC"
+      }
+    ],
+    "workplaceCards": [
+      {
+        "id": 1,
+        "name": "AE78VC"
+      }
+    ],
+    "cities": [
+      {
+        "id": 1,
+        "name": "القاهره"
+      }
+    ]
+  }
+}
