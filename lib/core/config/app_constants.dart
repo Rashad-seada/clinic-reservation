@@ -1,4 +1,7 @@
 class AppConstants {
+  // App name
+  static const String appName = 'Health Sponsors';
+  
   // API endpoints
   static const String baseUrl = 'https://appapi.smartsoftde.com/api';
   static const String authRegisterEndpoint = '/Auth/register';

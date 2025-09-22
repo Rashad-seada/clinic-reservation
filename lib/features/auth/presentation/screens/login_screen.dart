@@ -153,42 +153,34 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                       const SizedBox(height: 60),
-                  
+
                       // Logo with animation
                       FadeTransition(
                         opacity: _fadeAnimation,
                         child: ScaleTransition(
                           scale: _scaleAnimation,
-                          child: Container(
-                            width: 100,
-                            height: 100,
-                          decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: LinearGradient(
-                                colors: [
-                                  AppColors.primary,
-                                  AppColors.primary.withOpacity(0.8),
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
+                          child: Column(
+                            children: [
+                              Container(
+                                width: 120,
+                                height: 120,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: isDarkMode ? Colors.white.withOpacity(0.1) : Colors.grey[100],
+                                ),
+                                child: ClipOval(
+                                  child: Image.asset(
+                                    'assets/images/logo.jpeg',
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
                               ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.primary.withOpacity(0.3),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 10),
-                              ),
+
                             ],
-                          ),
-                          child: const Icon(
-                              Icons.medical_services_outlined,
-                              size: 50,
-                            color: Colors.white,
-                            ),
                           ),
                         ),
                       ),
-                      
+
                       const SizedBox(height: 40),
                       
                       // Welcome text with animation
@@ -206,7 +198,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
                         child: Column(
                           children: [
                   Text(
-                              context.tr('auth.welcome_back'),
+                    context.tr('common.app_name'),
                     style: TextStyle(
                                 fontSize: 32,
                       fontWeight: FontWeight.bold,
@@ -227,9 +219,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
                           ],
                         ),
                   ),
-                  
+
                       const SizedBox(height: 48),
-                  
+
                       // Form fields with animation
                       AnimatedBuilder(
                         animation: _slideAnimation,

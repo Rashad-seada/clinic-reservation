@@ -3,6 +3,8 @@
     "name": "Health Sponsors"
   },
   "common": {
+    "app_name": "Health Sponsors",
+    "app_slogan": "Your Health Partner",
     "save": "Save",
     "cancel": "Cancel",
     "confirm": "Confirm",
@@ -59,8 +61,6 @@
     "reset_success": "Password Reset Successful!",
     "reset_success_message": "Your password has been reset successfully. You can now login with your new password.",
     "go_to_login": "Go to Login",
-    "app_name": "Health Sponsors",
-    "app_slogan": "Your Health Partner",
     "onboarding": {
       "welcome_title": "Welcome to Clenic",
       "welcome_desc": "Your one-stop solution for clinic appointments and health management.",

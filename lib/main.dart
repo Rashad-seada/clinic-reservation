@@ -81,7 +81,7 @@ class MyApp extends ConsumerWidget {
     final isDark = ref.watch(isDarkModeProvider);
     
     return GetMaterialApp(
-      title: 'Clenic Reservation',
+      title: 'Health Sponsors',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,

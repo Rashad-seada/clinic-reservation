@@ -84,22 +84,23 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
             children: [
               // App Logo
               Container(
-                width: 120,
-                height: 120,
+                width: 160,
+                height: 160,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: isDarkMode ? Colors.white.withOpacity(0.1) : Colors.grey[100],
                 ),
-                child: Icon(
-                  Icons.medical_services_outlined,
-                  size: 60,
-                  color: AppColors.primary,
+                child: ClipOval(
+                  child: Image.asset(
+                    'assets/images/logo.jpeg',
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
               // App Name
               Text(
-                context.tr('auth.app_name'),
+                context.tr('common.app_name'),
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
@@ -108,7 +109,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
               ),
               const SizedBox(height: 8),
               Text(
-                context.tr('auth.app_slogan'),
+                context.tr('common.app_slogan'),
                 style: TextStyle(
                   fontSize: 16,
                   color: isDarkMode ? Colors.white70 : Colors.grey[600],
