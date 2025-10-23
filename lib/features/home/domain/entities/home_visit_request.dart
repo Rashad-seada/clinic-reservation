@@ -9,7 +9,7 @@ class HomeVisitRequest {
   final String time;
   final String service;
   final String symptoms;
-
+  final int serviceId;
   HomeVisitRequest({
     required this.clinicId,
     required this.patientId,
@@ -21,6 +21,7 @@ class HomeVisitRequest {
     required this.time,
     required this.service,
     required this.symptoms,
+    required this.serviceId
   });
 
   Map<String, dynamic> toJson() {
@@ -35,6 +36,7 @@ class HomeVisitRequest {
       'time': time,
       'service': service,
       'symptoms': symptoms,
+      'serviceId' : serviceId
     };
   }
 } 

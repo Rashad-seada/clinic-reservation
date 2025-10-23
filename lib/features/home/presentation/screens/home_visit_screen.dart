@@ -13,10 +13,11 @@ import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:get_it/get_it.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-
+import 'package:arwa_app/features/home/domain/entities/service.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/theme/map_style.dart';
+import '../../domain/repositories/appointment_repository.dart';
 
 class HomeVisitScreen extends ConsumerStatefulWidget {
   const HomeVisitScreen({super.key});
@@ -29,29 +30,94 @@ class _HomeVisitScreenState extends ConsumerState<HomeVisitScreen> {
   final _formKey = GlobalKey<FormState>();
   final _addressController = TextEditingController();
   final _mobileController = TextEditingController();
-  final _serviceController = TextEditingController();
   final _symptomsController = TextEditingController();
-  
+
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
   bool _isLoading = false;
   bool _isLoadingData = true;
+  bool _isLoadingClinicServices = false;
   String? _currentLocation;
   LocationData? _selectedLocationData;
-  
+  bool _dataLoaded = false;
+
   // Selected values
   int? _selectedClinicId;
+  String? _selectedClinicName;
   int? _selectedCityId;
-  
+  int? _selectedServiceId;
+  String? _selectedServiceName;
+
   // Booking data
   List<Clinic> _clinics = [];
   List<City> _cities = [];
+  List<Service> _services = [];
   int? _patientId;
 
   @override
   void initState() {
     super.initState();
-    _loadBookingData();
+    // Don't load data here - context isn't ready
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_dataLoaded) {
+      _loadBookingData();
+    }
+  }
+
+  Future<void> _loadClinicServices(int clinicId) async {
+    if (!mounted) return;
+
+    setState(() {
+      _isLoadingClinicServices = true;
+      _selectedServiceId = null;
+      _selectedServiceName = null;
+      _services = [];
+    });
+
+    try {
+      final appointmentRepository = GetIt.instance<AppointmentRepository>();
+
+      // Get locale safely from context
+      final locale = Localizations.localeOf(context);
+
+      debugPrint('🔄 Loading clinic services for clinic ID: $clinicId, language: ${locale.languageCode}');
+
+      final clinicServicesResponse = await appointmentRepository.getClinicServices(
+        clinicId,
+        language: locale.languageCode,
+      );
+
+      debugPrint('✅ Clinic services loaded successfully: ${clinicServicesResponse.services.length} services found');
+
+      if (!mounted) return;
+
+      setState(() {
+        _services = clinicServicesResponse.services;
+        _isLoadingClinicServices = false;
+      });
+    } catch (e) {
+      debugPrint('❌ Error loading clinic services for home visit: $e');
+      if (!mounted) return;
+
+      setState(() {
+        _isLoadingClinicServices = false;
+      });
+
+      // Show snackbar safely
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Get.snackbar(
+          context.tr('error'),
+          context.tr('home_visit.failed_to_load_services'),
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppColors.error.withOpacity(0.9),
+          colorText: Colors.white,
+        );
+      });
+    }
   }
 
   Future<void> _getCurrentLocation() async {
@@ -60,11 +126,26 @@ class _HomeVisitScreenState extends ConsumerState<HomeVisitScreen> {
     });
 
     try {
-      // Check location permissions
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Get.snackbar(
+              context.tr('location.permission_denied'),
+              context.tr('location.permission_denied_message'),
+              snackPosition: SnackPosition.BOTTOM,
+              backgroundColor: AppColors.error.withOpacity(0.9),
+              colorText: Colors.white,
+            );
+          });
+          _useFallbackLocation();
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
           Get.snackbar(
             context.tr('location.permission_denied'),
             context.tr('location.permission_denied_message'),
@@ -72,151 +153,171 @@ class _HomeVisitScreenState extends ConsumerState<HomeVisitScreen> {
             backgroundColor: AppColors.error.withOpacity(0.9),
             colorText: Colors.white,
           );
-          _useFallbackLocation();
-          return;
-        }
-      }
-
-      if (permission == LocationPermission.deniedForever) {
-        Get.snackbar(
-          context.tr('location.permission_denied'),
-          context.tr('location.permission_denied_message'),
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: AppColors.error.withOpacity(0.9),
-          colorText: Colors.white,
-        );
+        });
         _useFallbackLocation();
         return;
       }
 
-      // Get current position
       Position position = await Geolocator.getCurrentPosition();
+      if (!mounted) return;
+
       setState(() {
         _currentLocation = "${position.latitude},${position.longitude}";
         _isLoading = false;
       });
-      
-      debugPrint('Current location: $_currentLocation');
+
+      debugPrint('📍 Current location: $_currentLocation');
     } catch (e) {
-      debugPrint('Error getting location: $e');
+      debugPrint('❌ Error getting location: $e');
       _useFallbackLocation();
     }
   }
 
   void _useFallbackLocation() {
+    if (!mounted) return;
+
     setState(() {
-      _currentLocation = "30.0444,31.2357"; // Cairo coordinates
+      _currentLocation = "30.0444,31.2357";
       _isLoading = false;
     });
-    
-    Get.snackbar(
-      context.tr('location.unavailable'),
-      context.tr('location.using_default_location'),
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.orange.withOpacity(0.9),
-      colorText: Colors.white,
-    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Get.snackbar(
+        context.tr('location.unavailable'),
+        context.tr('location.using_default_location'),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.orange.withOpacity(0.9),
+        colorText: Colors.white,
+      );
+    });
   }
 
   Future<void> _loadBookingData() async {
+    if (!mounted || _dataLoaded) return;
+
     setState(() {
       _isLoadingData = true;
     });
-    
+
     try {
       final patientRepository = GetIt.instance<PatientRepository>();
       final bookingData = patientRepository.getStoredBookingData();
       final patientId = patientRepository.getPatientId();
-      
+
+      debugPrint('🔄 Loading booking data...');
+
       if (bookingData != null && patientId != null) {
+        debugPrint('✅ Using stored booking data: ${bookingData.clinics.length} clinics, ${bookingData.cities.length} cities');
+
+        if (!mounted) return;
+
         setState(() {
           _clinics = bookingData.clinics;
           _cities = bookingData.cities;
           _patientId = patientId;
-          
-          // Set default values if available
+
           if (_clinics.isNotEmpty) {
             _selectedClinicId = _clinics.first.id;
+            _selectedClinicName = _clinics.first.name;
           }
           if (_cities.isNotEmpty) {
             _selectedCityId = _cities.first.id;
           }
-          
+
           _isLoadingData = false;
+          _dataLoaded = true;
         });
+
+        // Load services for the default clinic
+        if (_selectedClinicId != null) {
+          await _loadClinicServices(_selectedClinicId!);
+        }
       } else {
         try {
-          // If no stored data, fetch from API
+          debugPrint('🔄 Fetching patient info from API...');
           final patientInfoResponse = await patientRepository.getPatientInfo();
+
+          debugPrint('✅ Patient info loaded: ${patientInfoResponse.bookingAppointmentData.clinics.length} clinics');
+
+          if (!mounted) return;
+
           setState(() {
             _clinics = patientInfoResponse.bookingAppointmentData.clinics;
             _cities = patientInfoResponse.bookingAppointmentData.cities;
             _patientId = patientInfoResponse.patient.id;
-            
-            // Set default values if available
+
             if (_clinics.isNotEmpty) {
               _selectedClinicId = _clinics.first.id;
+              _selectedClinicName = _clinics.first.name;
             }
             if (_cities.isNotEmpty) {
               _selectedCityId = _cities.first.id;
             }
-            
+
             _isLoadingData = false;
+            _dataLoaded = true;
           });
+
+          if (_selectedClinicId != null) {
+            await _loadClinicServices(_selectedClinicId!);
+          }
         } catch (apiError) {
-          debugPrint('API Error: $apiError');
-          // Provide fallback data when API is unavailable
+          debugPrint('❌ API Error loading patient info: $apiError');
           _provideFallbackData();
         }
       }
     } catch (e) {
-      debugPrint('Error loading booking data: $e');
-      // Provide fallback data when there's any error
+      debugPrint('❌ Error loading booking data: $e');
       _provideFallbackData();
     }
   }
-  
+
   void _provideFallbackData() {
-    // Create some fallback clinics and cities for testing
+    if (!mounted) return;
+
     final fallbackClinics = [
       Clinic(id: 1, name: "Main Clinic"),
       Clinic(id: 2, name: "Branch Clinic"),
       Clinic(id: 3, name: "Specialty Clinic"),
     ];
-    
+
     final fallbackCities = [
       City(id: 1, name: "Cairo"),
       City(id: 2, name: "Alexandria"),
       City(id: 5, name: "Giza"),
     ];
-    
+
+    debugPrint('🔄 Using fallback data: ${fallbackClinics.length} clinics, ${fallbackCities.length} cities');
+
     setState(() {
       _clinics = fallbackClinics;
       _cities = fallbackCities;
-      _patientId = 9284; // Use the patient ID from the API example
-      
-      // Set default values
+      _patientId = _patientId ?? 9284;
+
       _selectedClinicId = fallbackClinics.first.id;
+      _selectedClinicName = fallbackClinics.first.name;
       _selectedCityId = fallbackCities.first.id;
-      
+
       _isLoadingData = false;
+      _dataLoaded = true;
     });
-    
-    Get.snackbar(
-      context.tr('location.offline_mode'),
-      context.tr('location.using_sample_data'),
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.orange.withOpacity(0.9),
-      colorText: Colors.white,
-      duration: const Duration(seconds: 5),
-    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Get.snackbar(
+        context.tr('location.offline_mode'),
+        context.tr('location.using_sample_data'),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.orange.withOpacity(0.9),
+        colorText: Colors.white,
+        duration: const Duration(seconds: 5),
+      );
+    });
   }
 
   @override
   void dispose() {
     _addressController.dispose();
     _mobileController.dispose();
-    _serviceController.dispose();
     _symptomsController.dispose();
     super.dispose();
   }
@@ -241,7 +342,7 @@ class _HomeVisitScreenState extends ConsumerState<HomeVisitScreen> {
         );
       },
     );
-    
+
     if (picked != null && picked != _selectedDate) {
       setState(() {
         _selectedDate = picked;
@@ -267,7 +368,7 @@ class _HomeVisitScreenState extends ConsumerState<HomeVisitScreen> {
         );
       },
     );
-    
+
     if (picked != null && picked != _selectedTime) {
       setState(() {
         _selectedTime = picked;
@@ -275,20 +376,9 @@ class _HomeVisitScreenState extends ConsumerState<HomeVisitScreen> {
     }
   }
 
-  String _formatDateTime(DateTime date, TimeOfDay time) {
-    final DateTime dateTime = DateTime(
-      date.year,
-      date.month,
-      date.day,
-      time.hour,
-      time.minute,
-    );
-    return DateFormat("yyyy-MM-dd'T'HH:mm:ss").format(dateTime);
-  }
-
   Future<void> _submitReservation() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     if (_selectedDate == null) {
       Get.snackbar(
         context.tr('error'),
@@ -299,7 +389,7 @@ class _HomeVisitScreenState extends ConsumerState<HomeVisitScreen> {
       );
       return;
     }
-    
+
     if (_selectedTime == null) {
       Get.snackbar(
         context.tr('error'),
@@ -310,7 +400,7 @@ class _HomeVisitScreenState extends ConsumerState<HomeVisitScreen> {
       );
       return;
     }
-    
+
     if (_selectedClinicId == null) {
       Get.snackbar(
         context.tr('error'),
@@ -321,7 +411,7 @@ class _HomeVisitScreenState extends ConsumerState<HomeVisitScreen> {
       );
       return;
     }
-    
+
     if (_selectedCityId == null) {
       Get.snackbar(
         context.tr('error'),
@@ -332,7 +422,19 @@ class _HomeVisitScreenState extends ConsumerState<HomeVisitScreen> {
       );
       return;
     }
-    
+
+    // NEW VALIDATION: Check if service is selected
+    if (_selectedServiceId == null) {
+      Get.snackbar(
+        context.tr('error'),
+        context.tr('home_visit.please_select_service'),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.error.withOpacity(0.9),
+        colorText: Colors.white,
+      );
+      return;
+    }
+
     if (_patientId == null) {
       Get.snackbar(
         context.tr('error'),
@@ -343,7 +445,7 @@ class _HomeVisitScreenState extends ConsumerState<HomeVisitScreen> {
       );
       return;
     }
-    
+
     if (_currentLocation == null) {
       Get.snackbar(
         context.tr('error'),
@@ -354,15 +456,14 @@ class _HomeVisitScreenState extends ConsumerState<HomeVisitScreen> {
       );
       return;
     }
-    
+
     setState(() {
       _isLoading = true;
     });
-    
+
     try {
       final homeVisitRepository = GetIt.instance<HomeVisitRepository>();
-      
-      // Format date and time
+
       final visitDate = DateFormat('yyyy-MM-dd').format(_selectedDate!);
       final time = DateFormat('yyyy-MM-dd\'T\'HH:mm:ss').format(
         DateTime(
@@ -373,8 +474,8 @@ class _HomeVisitScreenState extends ConsumerState<HomeVisitScreen> {
           _selectedTime!.minute,
         ),
       );
-      
-      // Create request
+
+      // Create request - UPDATED to use serviceId instead of free-text service
       final request = HomeVisitRequest(
         clinicId: _selectedClinicId!,
         patientId: _patientId!,
@@ -384,31 +485,45 @@ class _HomeVisitScreenState extends ConsumerState<HomeVisitScreen> {
         location: _currentLocation!,
         visitDate: visitDate,
         time: time,
-        service: _serviceController.text,
+        serviceId: _selectedServiceId!,
+        service: _selectedServiceName!,
         symptoms: _symptomsController.text,
       );
-      
-      // Submit request
+
+      debugPrint('📤 Submitting home visit request:');
+      debugPrint('   - Clinic ID: ${request.clinicId}');
+      debugPrint('   - Patient ID: ${request.patientId}');
+      debugPrint('   - City ID: ${request.cityId}');
+      debugPrint('   - Service ID: ${request.serviceId}');
+      debugPrint('   - Service: ${request.service}');
+      debugPrint('   - Date: ${request.visitDate}');
+      debugPrint('   - Time: ${request.time}');
+      debugPrint('   - Location: ${request.location}');
+      debugPrint('   - Mobile: ${request.mobile}');
+      debugPrint('   - Address: ${request.address}');
+
       final response = await homeVisitRepository.scheduleHomeVisit(request);
-      
+
+      debugPrint('📥 Home visit response: $response');
+
       setState(() {
         _isLoading = false;
       });
-      
-      // Check response
+
       if (response['status'] == 'success') {
-        // Get clinic name
         final clinicName = _clinics.firstWhere((clinic) => clinic.id == _selectedClinicId).name;
-        
-        // Navigate to success screen
+
+        debugPrint('✅ Home visit booked successfully for clinic: $clinicName');
+
         Get.off(() => ReservationSuccessScreen(
           visitType: 'home',
           clinicName: clinicName,
-          serviceName: _serviceController.text,
+          serviceName: _selectedServiceName!,
           date: _selectedDate!,
           time: _selectedTime!,
         ));
       } else {
+        debugPrint('❌ Home visit booking failed: ${response['msg']}');
         Get.snackbar(
           context.tr('error'),
           response['msg'] ?? context.tr('home_visit.failed_schedule'),
@@ -418,10 +533,11 @@ class _HomeVisitScreenState extends ConsumerState<HomeVisitScreen> {
         );
       }
     } catch (e) {
+      debugPrint('❌ Exception during home visit booking: $e');
       setState(() {
         _isLoading = false;
       });
-      
+
       Get.snackbar(
         context.tr('error'),
         context.tr('home_visit.failed_schedule'),
@@ -440,9 +556,10 @@ class _HomeVisitScreenState extends ConsumerState<HomeVisitScreen> {
           _selectedLocationData = result;
           _currentLocation = result.coordinates;
         });
+        debugPrint('📍 Location selected from map: $_currentLocation');
       }
     } catch (e) {
-      debugPrint('Error selecting location: $e');
+      debugPrint('❌ Error selecting location from map: $e');
       Get.snackbar(
         context.tr('error'),
         context.tr('home_visit.failed_select_location'),
@@ -456,7 +573,7 @@ class _HomeVisitScreenState extends ConsumerState<HomeVisitScreen> {
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Scaffold(
       backgroundColor: isDarkMode ? const Color(0xFF1A1A2E) : Colors.white,
       appBar: AppBar(
@@ -479,200 +596,183 @@ class _HomeVisitScreenState extends ConsumerState<HomeVisitScreen> {
       body: _isLoadingData
           ? Center(child: Text(context.tr('common.loading')))
           : SafeArea(
-              child: Form(
-                key: _formKey,
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Header with icon
-                      _buildSectionHeader(
-                        context.tr('home_visit.home_visit_request'),
-                        context.tr('home_visit.doctor_visit_message'),
-                        Icons.home_outlined,
-                        isDarkMode,
-                      ),
-                      const SizedBox(height: 32),
-                      
-                      // Clinic Selection
-                      _buildSectionTitle(context.tr('home_visit.select_clinic'), isDarkMode),
-                      const SizedBox(height: 8),
-                      _buildClinicDropdown(isDarkMode,context),
-                      const SizedBox(height: 24),
-                      
-                      // City Selection
-                      _buildSectionTitle(context.tr('home_visit.select_city'), isDarkMode),
-                      const SizedBox(height: 8),
-                      _buildCityDropdown(isDarkMode),
-                      const SizedBox(height: 24),
-                      
-                      // Mobile Number
-                      _buildSectionTitle(context.tr('home_visit.mobile_number'), isDarkMode),
-                      const SizedBox(height: 8),
-                      InputField(
-                        controller: _mobileController,
-                        hint: context.tr('home_visit.enter_mobile'),
-                        prefixIcon: Icons.phone,
-                        keyboardType: TextInputType.phone,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return context.tr('home_visit.enter_mobile');
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 24),
-                      
-                      // Address
-                      _buildSectionTitle(context.tr('home_visit.address'), isDarkMode),
-                      const SizedBox(height: 8),
-                      InputField(
-                        controller: _addressController,
-                        hint: context.tr('home_visit.enter_address'),
-                        prefixIcon: Icons.location_on_outlined,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return context.tr('home_visit.enter_address');
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Location Coordinates
-                      _buildSectionTitle(context.tr('home_visit.location_coordinates'), isDarkMode),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: isDarkMode
-                                    ? Colors.white.withOpacity(0.05)
-                                    : Colors.grey[100],
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: AppColors.mediumGrey.withOpacity(0.3),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.gps_fixed,
-                                    color: AppColors.primary,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      _currentLocation ?? context.tr('home_visit.no_location'),
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: isDarkMode
-                                            ? Colors.white
-                                            : AppColors.darkText,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: AppColors.primary,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: IconButton(
-                              icon: const Icon(Icons.map, color: Colors.white),
-                              onPressed: _selectLocationFromMap,
-                              tooltip: context.tr('home_visit.select_on_map'),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: AppColors.primary,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: IconButton(
-                              icon: const Icon(Icons.my_location, color: Colors.white),
-                              onPressed: _getCurrentLocation,
-                              tooltip: context.tr('home_visit.use_current_location'),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      
-                      // Date and Time
-                      _buildSectionTitle(context.tr('home_visit.select_date_time'), isDarkMode),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildDatePicker(isDarkMode),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: _buildTimePicker(isDarkMode),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      
-                      // Service
-                      _buildSectionTitle(context.tr('home_visit.service'), isDarkMode),
-                      const SizedBox(height: 8),
-                      InputField(
-                        controller: _serviceController,
-                        hint: context.tr('home_visit.enter_service'),
-                        prefixIcon: Icons.medical_services_outlined,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return context.tr('home_visit.enter_service');
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 24),
-                      
-                      // Symptoms
-                      _buildSectionTitle(context.tr('home_visit.symptoms'), isDarkMode),
-                      const SizedBox(height: 8),
-                      InputField(
-                        controller: _symptomsController,
-                        hint: context.tr('home_visit.enter_symptoms'),
-                        prefixIcon: Icons.sick_outlined,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return context.tr('home_visit.enter_symptoms');
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 40),
-                      
-                      // Submit Button
-                      PrimaryButton(
-                        text: context.tr('home_visit.book_home_visit'),
-                        isLoading: _isLoading,
-                        onPressed: _submitReservation,
-                      ),
-                    ],
-                  ),
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildSectionHeader(
+                  context.tr('home_visit.home_visit_request'),
+                  context.tr('home_visit.doctor_visit_message'),
+                  Icons.home_outlined,
+                  isDarkMode,
                 ),
-              ),
+                const SizedBox(height: 32),
+
+                _buildSectionTitle(context.tr('home_visit.select_clinic'), isDarkMode),
+                const SizedBox(height: 8),
+                _buildClinicDropdown(isDarkMode),
+                const SizedBox(height: 24),
+
+                _buildSectionTitle(context.tr('home_visit.select_city'), isDarkMode),
+                const SizedBox(height: 8),
+                _buildCityDropdown(isDarkMode),
+                const SizedBox(height: 24),
+
+                // NEW: Service Selection (only show after clinic is selected)
+                if (_selectedClinicId != null) ...[
+                  _buildSectionTitle(context.tr('clinic_visit.select_service'), isDarkMode),
+                  const SizedBox(height: 8),
+                  _buildServiceDropdown(isDarkMode),
+                  const SizedBox(height: 24),
+                ],
+
+                _buildSectionTitle(context.tr('home_visit.mobile_number'), isDarkMode),
+                const SizedBox(height: 8),
+                InputField(
+                  controller: _mobileController,
+                  hint: context.tr('home_visit.enter_mobile'),
+                  prefixIcon: Icons.phone,
+                  keyboardType: TextInputType.phone,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return context.tr('home_visit.enter_mobile');
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 24),
+
+                _buildSectionTitle(context.tr('home_visit.address'), isDarkMode),
+                const SizedBox(height: 8),
+                InputField(
+                  controller: _addressController,
+                  hint: context.tr('home_visit.enter_address'),
+                  prefixIcon: Icons.location_on_outlined,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return context.tr('home_visit.enter_address');
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                _buildSectionTitle(context.tr('home_visit.location_coordinates'), isDarkMode),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: isDarkMode
+                              ? Colors.white.withOpacity(0.05)
+                              : Colors.grey[100],
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppColors.mediumGrey.withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.gps_fixed,
+                              color: AppColors.primary,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _currentLocation ?? context.tr('home_visit.no_location'),
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: isDarkMode
+                                      ? Colors.white
+                                      : AppColors.darkText,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.map, color: Colors.white),
+                        onPressed: _selectLocationFromMap,
+                        tooltip: context.tr('home_visit.select_on_map'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.my_location, color: Colors.white),
+                        onPressed: _getCurrentLocation,
+                        tooltip: context.tr('home_visit.use_current_location'),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                _buildSectionTitle(context.tr('home_visit.select_date_time'), isDarkMode),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildDatePicker(isDarkMode),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _buildTimePicker(isDarkMode),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                _buildSectionTitle(context.tr('home_visit.symptoms'), isDarkMode),
+                const SizedBox(height: 8),
+                InputField(
+                  controller: _symptomsController,
+                  hint: context.tr('home_visit.enter_symptoms'),
+                  prefixIcon: Icons.sick_outlined,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return context.tr('home_visit.enter_symptoms');
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 40),
+
+                PrimaryButton(
+                  text: context.tr('home_visit.book_home_visit'),
+                  isLoading: _isLoading,
+                  onPressed: _submitReservation,
+                ),
+              ],
             ),
+          ),
+        ),
+      ),
     );
   }
-  
+
   Widget _buildSectionHeader(String title, String subtitle, IconData icon, bool isDarkMode) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -719,7 +819,7 @@ class _HomeVisitScreenState extends ConsumerState<HomeVisitScreen> {
       ),
     );
   }
-  
+
   Widget _buildSectionTitle(String title, bool isDarkMode) {
     return Text(
       title,
@@ -730,8 +830,8 @@ class _HomeVisitScreenState extends ConsumerState<HomeVisitScreen> {
       ),
     );
   }
-  
-  Widget _buildClinicDropdown(bool isDarkMode,BuildContext context) {
+
+  Widget _buildClinicDropdown(bool isDarkMode) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
@@ -774,7 +874,14 @@ class _HomeVisitScreenState extends ConsumerState<HomeVisitScreen> {
           onChanged: (int? newValue) {
             setState(() {
               _selectedClinicId = newValue;
+              _selectedClinicName = _clinics.firstWhere((clinic) => clinic.id == newValue).name;
+              _selectedServiceId = null;
+              _selectedServiceName = null;
             });
+
+            if (newValue != null) {
+              _loadClinicServices(newValue);
+            }
           },
           items: _clinics.map<DropdownMenuItem<int>>((Clinic clinic) {
             return DropdownMenuItem<int>(
@@ -802,7 +909,87 @@ class _HomeVisitScreenState extends ConsumerState<HomeVisitScreen> {
       ),
     );
   }
-  
+
+  Widget _buildServiceDropdown(bool isDarkMode) {
+    if (_isLoadingClinicServices) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: isDarkMode ? Colors.white.withOpacity(0.05) : Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.mediumGrey.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<int>(
+          value: _selectedServiceId,
+          icon: const Icon(Icons.keyboard_arrow_down),
+          iconSize: 24,
+          elevation: 16,
+          isExpanded: true,
+          dropdownColor: isDarkMode ? const Color(0xFF1A1A2E) : Colors.white,
+          style: TextStyle(
+            color: isDarkMode ? Colors.white : AppColors.darkText,
+            fontSize: 16,
+          ),
+          hint: Row(
+            children: [
+              Icon(
+                Icons.medical_services_outlined,
+                color: AppColors.mediumGrey,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                context.tr('clinic_visit.select_service'),
+                style: TextStyle(
+                  color: AppColors.mediumGrey,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+          onChanged: (int? newValue) {
+            setState(() {
+              _selectedServiceId = newValue;
+              _selectedServiceName = _services.firstWhere((service) => service.id == newValue).name;
+            });
+          },
+          items: _services.map<DropdownMenuItem<int>>((Service service) {
+            return DropdownMenuItem<int>(
+              value: service.id,
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.medical_services_outlined,
+                    color: AppColors.primary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      service.name,
+                      style: TextStyle(
+                        color: isDarkMode ? Colors.white : AppColors.darkText,
+                        fontSize: 16,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
   Widget _buildCityDropdown(bool isDarkMode) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -874,7 +1061,7 @@ class _HomeVisitScreenState extends ConsumerState<HomeVisitScreen> {
       ),
     );
   }
-  
+
   Widget _buildDatePicker(bool isDarkMode) {
     return GestureDetector(
       onTap: _selectDate,
