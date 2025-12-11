@@ -26,6 +26,17 @@ class AppointmentRepositoryImpl implements AppointmentRepository {
       request: request,
     );
   }
+
+  @override
+  Future<Map<String, dynamic>> bookGuestAppointment({
+    required Map<String, dynamic> requestBody,
+    String language = 'ar',
+  }) {
+    return _appointmentService.bookGuestAppointment(
+      requestBody: requestBody,
+      language: language,
+    );
+  }
   
   @override
   Future<ClinicServicesResponse> getClinicServices(int clinicId, {String language = 'en'}) {
@@ -37,11 +48,9 @@ class AppointmentRepositoryImpl implements AppointmentRepository {
     required int doctorId, 
     required int clinicId,
     String language = 'en'
-  }) async {
+  }) async  {
     final token = await _authService.getToken();
-    if (token == null) {
-      throw Exception('User not authenticated');
-    }
+    // Token is optional for guest access (if supported by backend)
     
     return await _appointmentService.getDoctorSchedule(
       token: token,
@@ -49,6 +58,11 @@ class AppointmentRepositoryImpl implements AppointmentRepository {
       clinicId: clinicId,
       language: language,
     );
+  }
+  
+  @override
+  Future<Map<String, dynamic>> getServicePrice(int serviceId) {
+    return _appointmentService.getServicePrice(serviceId);
   }
   
   @override
@@ -60,4 +74,4 @@ class AppointmentRepositoryImpl implements AppointmentRepository {
   Future<List<Map<String, dynamic>>> getServicesByDoctor(int doctorId) {
     return _appointmentService.getServicesByDoctor(doctorId);
   }
-} 
+}

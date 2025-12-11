@@ -9,50 +9,38 @@ import 'package:arwa_app/features/home/domain/entities/doctor_schedule_response.
 import 'package:arwa_app/features/home/domain/entities/service.dart';
 import 'package:arwa_app/features/home/presentation/screens/reservation_success_screen.dart';
 import 'package:arwa_app/features/home/presentation/screens/receipt_screen.dart';
-import 'package:arwa_app/features/home/presentation/view_models/clinic_visit_view_model.dart';
+import 'package:arwa_app/features/home/presentation/view_models/guest_clinic_visit_view_model.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
-/// Clinic Visit Screen - Redesigned to match UI specifications
-class ClinicVisitScreen extends ConsumerStatefulWidget {
-  const ClinicVisitScreen({super.key});
+/// Guest Clinic Visit Screen - For unregistered users
+class GuestClinicVisitScreen extends ConsumerStatefulWidget {
+  const GuestClinicVisitScreen({super.key});
 
   @override
-  ConsumerState<ClinicVisitScreen> createState() => _ClinicVisitScreenState();
+  ConsumerState<GuestClinicVisitScreen> createState() => _GuestClinicVisitScreenState();
 }
 
-class _ClinicVisitScreenState extends ConsumerState<ClinicVisitScreen> {
+class _GuestClinicVisitScreenState extends ConsumerState<GuestClinicVisitScreen> {
   final _formKey = GlobalKey<FormState>();
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initializeControllers();
-    });
-  }
-
-  void _initializeControllers() {
-    final viewModel = ref.read(clinicVisitViewModelProvider.notifier);
-    final viewState = ref.read(clinicVisitViewModelProvider);
-    
-    // Initialize phone controller with patient phone
-    if (viewState.patient?.phone != null && viewModel.phoneController.text.isEmpty) {
-      viewModel.phoneController.text = viewState.patient!.phone!;
-    }
+    // Initial data loading happens in ViewModel provider creation
   }
 
   Future<void> _selectDate(BuildContext context) async {
-    final viewModel = ref.read(clinicVisitViewModelProvider.notifier);
-    final viewState = ref.read(clinicVisitViewModelProvider);
+    final viewModel = ref.read(guestClinicVisitViewModelProvider.notifier);
+    final viewState = ref.read(guestClinicVisitViewModelProvider);
 
     if (!viewState.hasDoctorSelected) {
       Get.snackbar(
         context.tr('common.error'),
-        context.tr('clinic_visit.please_select_doctor_first'),
+        context.tr('clinic_visit.please_select_doctor_first'), // Reuse existing keys
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppColors.error.withOpacity(0.9),
         colorText: Colors.white,
@@ -62,6 +50,7 @@ class _ClinicVisitScreenState extends ConsumerState<ClinicVisitScreen> {
       return;
     }
 
+    // Note: If schedule loading fails (due to auth), this might be empty.
     if (!viewState.hasAvailableSchedules) {
       Get.snackbar(
         context.tr('common.error'),
@@ -108,12 +97,12 @@ class _ClinicVisitScreenState extends ConsumerState<ClinicVisitScreen> {
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final viewState = ref.read(clinicVisitViewModelProvider);
-    final viewModel = ref.read(clinicVisitViewModelProvider.notifier);
+    final viewState = ref.read(guestClinicVisitViewModelProvider);
+    final viewModel = ref.read(guestClinicVisitViewModelProvider.notifier);
 
     // Navigate to Receipt Screen
     Get.to(() => ReceiptScreen(
-      patientName: viewState.patient?.username ?? '',
+      patientName: viewState.fullName ?? '', // Use entered full name
       serviceName: viewState.selectedServiceName ?? '',
       providerName: viewState.selectedDoctorName ?? '',
       date: DateFormat('dd/MM/yyyy').format(viewState.selectedDate!),
@@ -122,7 +111,7 @@ class _ClinicVisitScreenState extends ConsumerState<ClinicVisitScreen> {
       visitType: 'clinic',
       isLoading: viewState.isSubmitting,
       onConfirm: () async {
-        final success = await viewModel.submitReservation();
+        final success = await viewModel.submitGuestReservation();
         if (success) {
           final timeValue = viewState.selectedTimeSlot?.value ?? '00:00';
           final timeParts = timeValue.split(':');
@@ -146,14 +135,14 @@ class _ClinicVisitScreenState extends ConsumerState<ClinicVisitScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final viewState = ref.watch(clinicVisitViewModelProvider);
-    final viewModel = ref.read(clinicVisitViewModelProvider.notifier);
+    final viewState = ref.watch(guestClinicVisitViewModelProvider);
+    final viewModel = ref.read(guestClinicVisitViewModelProvider.notifier);
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final language = context.locale.languageCode;
 
     return Scaffold(
       backgroundColor: isDarkMode ? const Color(0xFF1A1A2E) : const Color(0xFFF5F5F5),
-      body: viewState.isLoading
+      body: viewState.isLoadingData
           ? _buildShimmerLoading(isDarkMode)
           : CustomScrollView(
               slivers: [
@@ -183,7 +172,7 @@ class _ClinicVisitScreenState extends ConsumerState<ClinicVisitScreen> {
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             Text(
-                              context.tr('clinic_visit.book_clinic_visit'),
+                              context.tr('clinic_visit.book_clinic_visit'), 
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 24,
@@ -193,7 +182,7 @@ class _ClinicVisitScreenState extends ConsumerState<ClinicVisitScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              context.tr('clinic_visit.doctor_visit_message'),
+                             context.tr('clinic_visit.doctor_visit_message'),
                               style: TextStyle(
                                 color: Colors.white.withOpacity(0.9),
                                 fontSize: 14,
@@ -225,6 +214,21 @@ class _ClinicVisitScreenState extends ConsumerState<ClinicVisitScreen> {
                                 onDismiss: () => viewModel.clearError(),
                               ),
                             ),
+
+                          // Full Name Field (NEW)
+                          _buildTextField(
+                            label: context.tr('auth.full_name'), // Reuse or add key
+                            controller: viewModel.fullNameController,
+                            hint: context.tr('auth.full_name'),
+                            isDarkMode: isDarkMode,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return context.tr('common.error_required'); // "Required"
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
 
                           // Clinic Dropdown
                           _buildDropdownField(

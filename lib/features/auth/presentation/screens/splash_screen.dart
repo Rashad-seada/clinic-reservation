@@ -65,8 +65,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
       // Navigate to home
       Get.offAllNamed(Routes.HOME);
     } else {
-      // Navigate to login
-      Get.offAllNamed(Routes.LOGIN);
+      // Navigate to welcome screen
+      Get.offAllNamed(Routes.WELCOME);
     }
   }
 

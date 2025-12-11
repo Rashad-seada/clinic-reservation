@@ -95,7 +95,7 @@ class AppTheme {
           fontFamily: 'Almarai',
         ),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: Colors.white,
         elevation: 2,
         shape: RoundedRectangleBorder(
@@ -200,7 +200,7 @@ class AppTheme {
           fontFamily: 'Almarai',
         ),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: AppColors.darkSurface,
         elevation: 2,
         shape: RoundedRectangleBorder(

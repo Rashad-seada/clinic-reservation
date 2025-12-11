@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class AppColors {
   // Primary brand colors
-  static Color primary = Colors.greenAccent;
+  static Color primary = const Color(0xFF187FAA);
   static Color secondary = Colors.green;
   
   // Status colors

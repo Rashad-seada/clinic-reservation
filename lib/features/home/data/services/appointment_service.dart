@@ -40,6 +40,42 @@ class AppointmentService {
     }
   }
   
+  /// Book a guest appointment (for unregistered users)
+  Future<Map<String, dynamic>> bookGuestAppointment({
+    required Map<String, dynamic> requestBody,
+    String language = 'ar',
+  }) async {
+    try {
+      final response = await _dio.post(
+        'PatientApi/onlineBooking',
+        data: requestBody,
+        queryParameters: {
+          'language': language,
+        },
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+      
+      debugPrint('Guest Booking API Response: ${response.data}');
+      
+      if (response.data is Map<String, dynamic>) {
+        return response.data;
+      } else {
+        throw Exception('Invalid response format');
+      }
+    } on DioException catch (e) {
+      debugPrint('Guest Booking API Error: ${e.response?.statusCode}');
+      debugPrint('Error Response: ${e.response?.data}');
+      rethrow;
+    } catch (e) {
+      debugPrint('Guest Booking API Error: $e');
+      rethrow;
+    }
+  }
+  
   /// Get clinic services and doctors using the new API endpoint
   Future<ClinicServicesResponse> getClinicServices(int clinicId, {String language = 'en'}) async {
     try {
@@ -69,19 +105,49 @@ class AppointmentService {
       return _getDummyClinicServices(clinicId);
     } catch (e) {
       debugPrint('Get Clinic Services API Error: $e');
-      // If parsing fails, fallback to dummy data
       return _getDummyClinicServices(clinicId);
+    }
+  }
+
+  /// Get service price
+  Future<Map<String, dynamic>> getServicePrice(int serviceId) async {
+    try {
+      final response = await _dio.get(
+        'PatientApi/Service-price',
+        queryParameters: {
+          'ServiceId': serviceId,
+        },
+      );
+      
+      debugPrint('Service Price API Response: ${response.data}');
+      
+      if (response.data is Map<String, dynamic>) {
+        return response.data;
+      } else {
+        throw Exception('Invalid response format');
+      }
+    } catch (e) {
+      debugPrint('Get Service Price API Error: $e');
+      rethrow;
     }
   }
   
   /// Get doctor schedule with available time slots
   Future<DoctorScheduleResponse> getDoctorSchedule({
-    required String token,
+    String? token,
     required int doctorId,
     required int clinicId,
     String language = 'en',
   }) async {
     try {
+      final headers = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (token != null) {
+        headers['Authorization'] = 'Bearer $token';
+      }
+
       final response = await _dio.get(
         'PatientApi/get-DoctorSchedule',
         queryParameters: {
@@ -90,10 +156,7 @@ class AppointmentService {
           'language': language,
         },
         options: Options(
-          headers: {
-            'Authorization': 'Bearer $token',
-            'Content-Type': 'application/json',
-          },
+          headers: headers,
         ),
       );
       

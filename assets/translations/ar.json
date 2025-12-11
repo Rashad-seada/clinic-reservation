@@ -20,7 +20,18 @@
     "submit": "إرسال",
     "reason_for_visit": "سبب الزيارة",
     "enter_reason": "أدخل سبب الزيارة",
-    "book_appointment": "حجز موعد"
+    "book_appointment": "حجز موعد",
+    "note": "ملاحظة",
+    "optional": "اختياري",
+    "confirmation": "تأكيد الحجز",
+    "reservation_details": "تفاصيل الحجز",
+    "confirm_reservation": "تأكيد الحجز",
+    "total_price": "إجمالي السعر",
+    "currency": "ر.س",
+    "date": "التاريخ",
+    "time": "الوقت",
+    "service": "الخدمة",
+    "location": "الموقع"
   },
   "auth": {
     "login": "تسجيل الدخول",
@@ -36,6 +47,9 @@
     "logout": "تسجيل الخروج",
     "welcome_back": "مرحباً بعودتك!",
     "please_sign_in": "الرجاء تسجيل الدخول للمتابعة",
+    "login_subtitle": "أدخل بياناتك للوصول إلى حسابك",
+    "remember_me": "تذكرني",
+    "forgot_password_question": "نسيت كلمة المرور ؟",
     "dont_have_account": "ليس لديك حساب؟",
     "already_have_account": "لديك حساب بالفعل؟",
     "sign_in": "تسجيل الدخول",
@@ -54,6 +68,8 @@
     "email_sent": "تم إرسال البريد!",
     "email_sent_message": "لقد أرسلنا رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني. يرجى التحقق من بريدك.",
     "back_to_login": "العودة لتسجيل الدخول",
+    "logout_confirmation": "تأكيد تسجيل الخروج",
+    "logout_message": "هل أنت متأكد من رغبتك في تسجيل الخروج؟",
     "reset_password_title": "إعادة تعيين كلمة المرور",
     "reset_password_message": "قم بإنشاء كلمة مرور جديدة آمنة لحسابك",
     "new_password": "كلمة المرور الجديدة",
@@ -61,6 +77,10 @@
     "reset_success": "تم إعادة تعيين كلمة المرور بنجاح!",
     "reset_success_message": "تم إعادة تعيين كلمة المرور بنجاح. يمكنك الآن تسجيل الدخول باستخدام كلمة المرور الجديدة.",
     "go_to_login": "الذهاب لتسجيل الدخول",
+    "welcome_screen_title": "مرحباً بك في كلينيك",
+    "welcome_screen_subtitle": "رحلتك نحو صحة أفضل تبدأ من هنا. احجز موعدك الآن.",
+    "welcome_or": "أو",
+    "reserve_now": "احجز الآن",
     "onboarding": {
       "welcome_title": "مرحباً بك في كلينيك",
       "welcome_desc": "حلك الشامل لحجز المواعيد الطبية وإدارة صحتك",
@@ -97,7 +117,14 @@
     "no_clinic_reservations": "لا توجد حجوزات في العيادة",
     "no_home_reservations": "لا توجد حجوزات منزلية",
     "file_number": "رقم الجوال",
-    "national_id": "رقم المريض"
+    "national_id": "رقم المريض",
+    "my_reservations": "حجوزاتي",
+    "view_manage_appointments": "عرض وإدارة مواعيدك",
+    "add_new_reservation": "إضافة حجز جديد",
+    "filter_all": "الكل",
+    "filter_upcoming": "القادمة",
+    "filter_past": "السابقة",
+    "no_reservations": "لا توجد حجوزات"
   },
   "clinic_visit": {
     "clinic_visit_request": "طلب زيارة عيادة",
@@ -136,6 +163,8 @@
     "address": "العنوان",
     "location_coordinates": "إحداثيات الموقع",
     "select_date_time": "اختر التاريخ والوقت",
+    "select_date": "اختر التاريخ",
+    "select_time": "اختر الوقت",
     "service": "الخدمة",
     "symptoms": "الأعراض",
     "enter_address": "أدخل عنوانك",
@@ -144,7 +173,15 @@
     "enter_symptoms": "صف الأعراض",
     "no_location": "لم يتم تحديد موقع",
     "select_on_map": "اختر على الخريطة",
-    "use_current_location": "استخدم الموقع الحالي"
+    "use_current_location": "استخدم الموقع الحالي",
+    "patient_name": "اسم المريض",
+    "please_select_date": "الرجاء اختيار تاريخ للزيارة",
+    "please_select_time": "الرجاء اختيار وقت للزيارة",
+    "please_select_clinic": "الرجاء اختيار عيادة",
+    "please_select_city": "الرجاء اختيار مدينة",
+    "patient_not_found": "لم يتم العثور على معلومات المريض",
+    "location_not_available": "معلومات الموقع غير متوفرة",
+    "failed_schedule": "فشل في جدولة الزيارة المنزلية"
   },
   "location": {
     "select_location": "اختر الموقع",
@@ -190,6 +227,16 @@
     "back_to_home": "العودة للرئيسية",
     "pending": "قيد الانتظار",
     "cancelled": "ملغي",
-    "done": "مكتمل"
-  }
-} 
+    "done": "مكتمل",
+    "confirmed": "مؤكد",
+    "location": "الموقع",
+    "address": "العنوان",
+    "phone": "الهاتف",
+    "notes": "ملاحظات",
+    "reschedule": "إعادة الجدولة",
+    "cancel": "إلغاء الموعد",
+    "cancel_feature_coming_soon": "ميزة الإلغاء قريباً",
+    "reschedule_feature_coming_soon": "ميزة إعادة الجدولة قريباً"
+  },
+  "welcome": {}
+}

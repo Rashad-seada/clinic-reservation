@@ -20,7 +20,18 @@
     "submit": "Submit",
     "reason_for_visit": "Reason for Visit",
     "enter_reason": "Enter reason for visit",
-    "book_appointment": "Book Appointment"
+    "book_appointment": "Book Appointment",
+    "note": "Note",
+    "optional": "Optional",
+    "confirmation": "Confirmation",
+    "reservation_details": "Reservation Details",
+    "confirm_reservation": "Confirm Reservation",
+    "total_price": "Total Price",
+    "currency": "SAR",
+    "date": "Date",
+    "time": "Time",
+    "service": "Service",
+    "location": "Location"
   },
   "auth": {
     "login": "Login",
@@ -35,7 +46,10 @@
     "phone": "Phone Number",
     "logout": "Logout",
     "welcome_back": "Welcome Back!",
-    "please_sign_in": "Please sign in to continue",
+    "please_sign_in": "Sign in to continue",
+    "login_subtitle": "Enter your details to access your account",
+    "remember_me": "Remember me",
+    "forgot_password_question": "Forgot Password?",
     "dont_have_account": "Don't have an account?",
     "already_have_account": "Already have an account?",
     "sign_in": "Sign In",
@@ -54,6 +68,8 @@
     "email_sent": "Email Sent!",
     "email_sent_message": "We've sent a password reset link to your email. Please check your email.",
     "back_to_login": "Back to Login",
+    "logout_confirmation": "Logout Confirmation",
+    "logout_message": "Are you sure you want to logout?",
     "reset_password_title": "Reset Your Password",
     "reset_password_message": "Create a new secure password for your account",
     "new_password": "New Password",
@@ -61,6 +77,10 @@
     "reset_success": "Password Reset Successful!",
     "reset_success_message": "Your password has been reset successfully. You can now login with your new password.",
     "go_to_login": "Go to Login",
+    "welcome_screen_title": "Welcome to Clenic",
+    "welcome_screen_subtitle": "Your journey to better health starts here. Book your appointment now.",
+    "welcome_or": "OR",
+    "reserve_now": "Reserve Now",
     "onboarding": {
       "welcome_title": "Welcome to Clenic",
       "welcome_desc": "Your one-stop solution for clinic appointments and health management.",
@@ -97,7 +117,14 @@
     "no_clinic_reservations": "No clinic reservations yet",
     "no_home_reservations": "No home reservations yet",
     "file_number": "Phone Number",
-    "national_id": "Patient ID"
+    "national_id": "Patient ID",
+    "my_reservations": "My Reservations",
+    "view_manage_appointments": "View and manage your appointments",
+    "add_new_reservation": "Add New Appointment",
+    "filter_all": "All",
+    "filter_upcoming": "Upcoming",
+    "filter_past": "Past",
+    "no_reservations": "No reservations found"
   },
   "clinic_visit": {
     "clinic_visit_request": "Clinic Visit Request",
@@ -152,6 +179,7 @@
     "please_select_time": "Please select a time for your visit",
     "please_select_clinic": "Please select a clinic",
     "please_select_city": "Please select a city",
+    "patient_name": "Patient Name",
     "patient_not_found": "Patient information not found",
     "location_not_available": "Location information not available",
     "failed_schedule": "Failed to schedule home visit"
@@ -199,6 +227,16 @@
     "back_to_home": "Back to Home",
     "pending": "Pending",
     "cancelled": "Cancelled",
-    "done": "Completed"
-  }
-} 
+    "done": "Completed",
+    "confirmed": "Confirmed",
+    "location": "Location",
+    "address": "Address",
+    "phone": "Phone",
+    "notes": "Notes",
+    "reschedule": "Reschedule",
+    "cancel": "Cancel Appointment",
+    "cancel_feature_coming_soon": "Cancel feature coming soon",
+    "reschedule_feature_coming_soon": "Reschedule feature coming soon"
+  },
+  "welcome": {}
+}

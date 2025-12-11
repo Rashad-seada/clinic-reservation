@@ -8,6 +8,11 @@ abstract class AppointmentRepository {
   Future<Map<String, dynamic>> bookAppointment({
     required AppointmentBookingRequest request,
   });
+
+  Future<Map<String, dynamic>> bookGuestAppointment({
+    required Map<String, dynamic> requestBody,
+    String language = 'ar',
+  });
   
   Future<ClinicServicesResponse> getClinicServices(int clinicId, {String language = 'en'});
   
@@ -16,6 +21,8 @@ abstract class AppointmentRepository {
     required int clinicId,
     String language = 'en'
   });
+
+  Future<Map<String, dynamic>> getServicePrice(int serviceId);
   
   // Deprecated methods
   @Deprecated('Use getClinicServices instead')
